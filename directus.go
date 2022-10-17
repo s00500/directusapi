@@ -12,26 +12,17 @@ type PrimaryKey interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~string
 }
 
-// API is a generic API client for any Directus collection
-// R is a read model
-// W is a write model
-// PK is a type of primary key
 type API[R, W any, PK PrimaryKey] struct {
 	Scheme         string
 	Host           string
-	Namespace      string
 	CollectionName string
 	BearerToken    string
 	HTTPClient     *http.Client
 	debug          bool
 }
 
-// CreateToken uses provided credentials to generate server token
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/authentication.html#retrieve-a-temporary-access-token
 func (d API[R, W, PK]) CreateToken(ctx context.Context, email, password string) (string, error) {
-	u := fmt.Sprintf("%s://%s/%s/auth/authenticate", d.Scheme, d.Host, d.Namespace)
+	u := fmt.Sprintf("%s://%s/auth/authenticate", d.Scheme, d.Host)
 
 	body := struct {
 		Email    string `json:"email"`
@@ -62,13 +53,9 @@ func (d API[R, W, PK]) CreateToken(ctx context.Context, email, password string) 
 	return respBody.Data.Token, nil
 }
 
-// Insert attempts to insert new item
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#create-an-item
 func (d API[R, W, PK]) Insert(ctx context.Context, item W) (R, error) {
 	var empty R
-	u := fmt.Sprintf("%s://%s/%s/items/%s", d.Scheme, d.Host, d.Namespace, d.CollectionName)
+	u := fmt.Sprintf("%s://%s/items/%s", d.Scheme, d.Host, d.CollectionName)
 
 	req := request{
 		ctx,
@@ -89,13 +76,9 @@ func (d API[R, W, PK]) Insert(ctx context.Context, item W) (R, error) {
 	return respBody.Data, nil
 }
 
-// Create attempts to create new item with partials
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#create-an-item
 func (d API[R, W, PK]) Create(ctx context.Context, partials map[string]any) (R, error) {
 	var empty R
-	u := fmt.Sprintf("%s://%s/%s/items/%s", d.Scheme, d.Host, d.Namespace, d.CollectionName)
+	u := fmt.Sprintf("%s://%s/items/%s", d.Scheme, d.Host, d.CollectionName)
 
 	req := request{
 		ctx,
@@ -118,12 +101,8 @@ func (d API[R, W, PK]) Create(ctx context.Context, partials map[string]any) (R, 
 
 }
 
-// GetByID reads a single item by given ID
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#retrieve-an-item
 func (d API[R, W, PK]) GetByID(ctx context.Context, id PK) (R, error) {
-	u := fmt.Sprintf("%s://%s/%s/items/%s/%v", d.Scheme, d.Host, d.Namespace, d.CollectionName, id)
+	u := fmt.Sprintf("%s://%s/items/%s/%v", d.Scheme, d.Host, d.CollectionName, id)
 
 	req := request{
 		ctx,
@@ -146,13 +125,9 @@ func (d API[R, W, PK]) GetByID(ctx context.Context, id PK) (R, error) {
 	return respBody.Data, nil
 }
 
-// Update performs partial update of an item with given id
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#update-an-item
 func (d API[R, W, PK]) Update(ctx context.Context, id PK, partials map[string]any) (R, error) {
 	var empty R
-	u := fmt.Sprintf("%s://%s/%s/items/%s/%v", d.Scheme, d.Host, d.Namespace, d.CollectionName, id)
+	u := fmt.Sprintf("%s://%s/items/%s/%v", d.Scheme, d.Host, d.CollectionName, id)
 
 	req := request{
 		ctx,
@@ -174,13 +149,9 @@ func (d API[R, W, PK]) Update(ctx context.Context, id PK, partials map[string]an
 	return respBody.Data, nil
 }
 
-// Set performs an update of an item with given id
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#update-an-item
 func (d API[R, W, PK]) Set(ctx context.Context, id PK, item W) (R, error) {
 	var empty R
-	u := fmt.Sprintf("%s://%s/%s/items/%s/%v", d.Scheme, d.Host, d.Namespace, d.CollectionName, id)
+	u := fmt.Sprintf("%s://%s/items/%s/%v", d.Scheme, d.Host, d.CollectionName, id)
 
 	req := request{
 		ctx,
@@ -202,12 +173,8 @@ func (d API[R, W, PK]) Set(ctx context.Context, id PK, item W) (R, error) {
 	return respBody.Data, nil
 }
 
-// Delete removes item with a given id
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#update-an-item
 func (d API[R, W, PK]) Delete(ctx context.Context, id PK) error {
-	u := fmt.Sprintf("%s://%s/%s/items/%s/%v", d.Scheme, d.Host, d.Namespace, d.CollectionName, id)
+	u := fmt.Sprintf("%s://%s/items/%s/%v", d.Scheme, d.Host, d.CollectionName, id)
 	req := request{
 		ctx,
 		http.MethodDelete,
@@ -223,12 +190,8 @@ func (d API[R, W, PK]) Delete(ctx context.Context, id PK) error {
 	return nil
 }
 
-// Items retrieves a collection of items
-//
-// Related Directus reference:
-// https://v8.docs.directus.io/api/items.html#update-an-item
 func (d API[R, W, PK]) Items(ctx context.Context, q query) ([]R, error) {
-	u := fmt.Sprintf("%s://%s/%s/items/%s", d.Scheme, d.Host, d.Namespace, d.CollectionName)
+	u := fmt.Sprintf("%s://%s/items/%s", d.Scheme, d.Host, d.CollectionName)
 	qv := q.asKeyValue()
 	qv["fields"] = strings.Join(d.jsonFieldsR(), ",")
 
